@@ -1,0 +1,10 @@
+.DS_Store
+.build/
+.swiftpm/
+dist/
+*.profraw
+*.profdata
+scan-history.json
+avast.jsonl
+image/
+docs/superpowers/
