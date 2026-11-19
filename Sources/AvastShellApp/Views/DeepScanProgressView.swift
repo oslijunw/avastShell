@@ -29,24 +29,22 @@ struct DeepScanProgressView: View {
                 .buttonStyle(AvastOutlineButtonStyle())
                 .frame(width: 120)
                 .position(x: 504, y: 584)
+
+            Button {
+                state.showScanCenter()
+            } label: {
+                Image(systemName: "arrow.left")
+                    .font(.system(size: 22, weight: .light))
+                    .frame(width: 40, height: 80)
+                    .background(Circle().fill(.white.opacity(0.07)).frame(width: 80, height: 80))
+            }
+            .buttonStyle(AvastHoverButtonStyle())
+            .accessibilityLabel("返回")
+            .position(x: 45, y: 68)
         }
         .foregroundStyle(.white)
-        .task {
-            animationStart = Date()
-            // Visual simulation only: no filesystem access or scanning work.
-            for step in 1...40 {
-                do { try await Task.sleep(for: .milliseconds(90)) }
-                catch { return }
-                guard state.page == .deepScanProgress else { return }
-                withAnimation(.linear(duration: 0.09)) {
-                    state.scanProgress = min(100, step * 100 / 40)
-                }
-            }
-            do { try await Task.sleep(for: .milliseconds(250)) }
-            catch { return }
-            guard state.page == .deepScanProgress else { return }
-            try? state.completeActiveScan(now: Date())
-        }
+        .animation(.linear(duration: 0.1), value: state.scanProgress)
+        .onAppear { animationStart = Date() }
     }
 
     private var currentPath: String {

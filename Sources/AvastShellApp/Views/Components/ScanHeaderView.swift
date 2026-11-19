@@ -44,8 +44,7 @@ struct ScanHeaderView: View {
 
     private func tab(_ title: String, _ value: ScanCenterTab) -> some View {
         Button {
-            if value == .history { state.showScanHistory() }
-            else { state.showScanCenter(tab: value) }
+            state.selectScanTab(value)
         } label: {
             Text(title).font(.system(size: 14, weight: .medium))
                 .foregroundStyle(selectedTab == value ? .white : AvastTheme.textSecondary)
@@ -72,16 +71,18 @@ struct ScanHeaderView: View {
 
 struct ScanIconBadge: View {
     let kind: AvastIconKind
-    var progress = false
+    /// 进度环数值（0…1）；nil 表示未在扫描中，不显示进度环。
+    var progress: Double? = nil
     var body: some View {
         AvastIcon(kind: kind).frame(width: 24, height: 24)
             .frame(width: 40, height: 40)
             .background(Circle().fill(AvastTheme.accent))
             .overlay {
-                if progress {
-                    Circle().trim(from: 0, to: 0.72)
-                        .stroke(AvastTheme.primary, lineWidth: 2)
+                if let progress {
+                    Circle().trim(from: 0, to: progress)
+                        .stroke(AvastTheme.primary, style: StrokeStyle(lineWidth: 2, lineCap: .round))
                         .rotationEffect(.degrees(-90))
+                        .animation(.linear(duration: 0.1), value: progress)
                 }
             }
     }

@@ -3,6 +3,7 @@ import SwiftUI
 struct TopBarView: View {
     let state: AppState
     @State private var showingMenu = false
+    @Environment(\.openWindow) private var openWindow
     var body: some View {
         ZStack {
             HStack {
@@ -20,24 +21,14 @@ struct TopBarView: View {
                         }
                     }
                     .buttonStyle(AvastHoverButtonStyle())
-                    .popover(isPresented: $showingMenu, arrowEdge: .top) {
-                        Button {
-                            Task { await state.checkForUpdates() }
-                        } label: {
-                            HStack(spacing: 12) {
-                                Image(systemName: state.hasCheckedForUpdates ? "checkmark.circle" : "arrow.clockwise")
-                                    .foregroundStyle(AvastTheme.primary)
-                                Text(state.isCheckingForUpdates ? "正在检查更新…" : state.hasCheckedForUpdates ? "已是最新版本" : "检查更新")
-                                    .font(.system(size: 14))
-                                Spacer(minLength: 0)
+                    .overlay(alignment: .bottomTrailing) {
+                        // 与面板等宽的透明锚点：popover 水平居中于锚点，
+                        // 因此面板右缘对齐按钮右缘，不会超出窗口
+                        Color.clear
+                            .frame(width: 340, height: 2)
+                            .popover(isPresented: $showingMenu, arrowEdge: .bottom) {
+                                menuPanel
                             }
-                            .foregroundStyle(.white)
-                            .padding(16)
-                            .frame(width: 190)
-                            .background(AvastTheme.backgroundGradient)
-                        }
-                        .buttonStyle(AvastHoverButtonStyle())
-                        .disabled(state.isCheckingForUpdates)
                     }
                 }
                 .padding(.trailing, 16)
@@ -51,12 +42,74 @@ struct TopBarView: View {
         .frame(height: 38)
     }
 
+    /// 「菜单」下拉面板，右对齐锚定在窗口内，不超出窗口边界。
+    private var menuPanel: some View {
+        VStack(spacing: 0) {
+            // 登录区块
+            VStack(spacing: 20) {
+                Text("登录到 Avast 以同步您的订阅等内容。")
+                    .font(.system(size: 15))
+                    .multilineTextAlignment(.center)
+                Button("登录") {}
+                    .buttonStyle(AvastPrimaryButtonStyle())
+                    .frame(width: 140)
+            }
+            .padding(.horizontal, 36)
+            .padding(.vertical, 28)
+            Rectangle()
+                .fill(.white.opacity(0.12))
+                .frame(height: 1)
+            VStack(alignment: .leading, spacing: 0) {
+                menuRow("creditcard", "我的订阅")
+                menuRow("gearshape", "首选项", action: {
+                    showingMenu = false
+                    openWindow(id: "preferences")
+                })
+                menuRow("cart", "Avast 商店")
+                menuRow("chart.line.uptrend.xyaxis", "统计")
+                menuRow("questionmark.circle", "帮助")
+                menuRow("info.circle", "关于")
+                // 保留原有检查更新入口
+                menuRow(
+                    state.hasCheckedForUpdates ? "checkmark.circle" : "arrow.clockwise",
+                    state.isCheckingForUpdates ? "正在检查更新…" : state.hasCheckedForUpdates ? "已是最新版本" : "检查更新",
+                    action: { Task { await state.checkForUpdates() } }
+                )
+                .disabled(state.isCheckingForUpdates)
+            }
+            .padding(.vertical, 12)
+        }
+        .frame(width: 340)
+        .background(AvastTheme.backgroundGradient)
+        .foregroundStyle(.white)
+    }
+
     private func item(_ symbol: String, _ title: String) -> some View {
         Button {} label: {
             HStack(spacing: 10) {
                 Image(systemName: symbol).font(.system(size: 18, weight: .light))
                 Text(title).font(.system(size: 14))
             }
+        }
+        .buttonStyle(AvastHoverButtonStyle())
+    }
+
+    /// 菜单下拉面板中的单行菜单项。
+    private func menuRow(_ symbol: String, _ title: String, action: (() -> Void)? = nil) -> some View {
+        Button {
+            action?()
+        } label: {
+            HStack(spacing: 18) {
+                Image(systemName: symbol)
+                    .font(.system(size: 17, weight: .light))
+                    .foregroundStyle(.white.opacity(0.85))
+                    .frame(width: 22)
+                Text(title).font(.system(size: 15))
+                Spacer(minLength: 0)
+            }
+            .padding(.horizontal, 36)
+            .padding(.vertical, 12)
+            .contentShape(Rectangle())
         }
         .buttonStyle(AvastHoverButtonStyle())
     }

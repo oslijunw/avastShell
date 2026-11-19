@@ -2,7 +2,6 @@ import SwiftUI
 
 struct ScanHistoryView: View {
     let state: AppState
-    @State private var expandedRecordIDs: Set<UUID> = []
 
     var body: some View {
         VStack(spacing: 24) {
@@ -29,11 +28,12 @@ struct ScanHistoryView: View {
             ScanIconBadge(kind: record.kind == .smart ? .brain : .deep)
                 .scaleEffect(1.2).frame(width: 48, height: 48)
                 .overlay(alignment: .bottomTrailing) {
-                    Image(systemName: record.status == .completedNoThreats ? "checkmark" : "exclamationmark")
+                    // 两种状态（完成/取消）均为未发现威胁，统一显示绿色对勾
+                    Image(systemName: "checkmark")
                         .font(.system(size: 10, weight: .bold))
                         .foregroundStyle(Color(red: 0.08, green: 0.04, blue: 0.22))
                         .frame(width: 16, height: 16)
-                        .background(Circle().fill(record.status == .completedNoThreats ? AvastTheme.primary : AvastTheme.warning))
+                        .background(Circle().fill(AvastTheme.primary))
                 }
             VStack(alignment: .leading, spacing: 9) {
                 Text("\(record.kind.rawValue) \(record.status.rawValue)。")
@@ -42,22 +42,13 @@ struct ScanHistoryView: View {
                     .font(.system(size: 14))
                     .foregroundStyle(AvastTheme.textSecondary)
                 HStack(spacing: 14) {
-                    Button(expandedRecordIDs.contains(record.id) ? "收起结果" : "显示结果") {
-                        if expandedRecordIDs.contains(record.id) { expandedRecordIDs.remove(record.id) }
-                        else { expandedRecordIDs.insert(record.id) }
-                    }
-                    .buttonStyle(AvastOutlineButtonStyle())
+                    Button("显示结果") { state.showScanResult(record) }
+                        .buttonStyle(AvastOutlineButtonStyle())
                     Button { try? state.deleteRecord(id: record.id) } label: {
                         Image(systemName: "trash").font(.system(size: 21, weight: .light)).frame(width: 28, height: 30)
                     }
                     .buttonStyle(AvastHoverButtonStyle())
                     .accessibilityLabel("删除记录")
-                }
-                if expandedRecordIDs.contains(record.id) {
-                    Text("扫描文件数：\(record.fileCount.formatted())")
-                        .font(.system(size: 13))
-                        .foregroundStyle(AvastTheme.textSecondary)
-                        .padding(.vertical, 4)
                 }
             }
             .padding(.top, 3)

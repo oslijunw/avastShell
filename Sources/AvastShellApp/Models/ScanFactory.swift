@@ -6,28 +6,32 @@ enum ScanFactory {
     static func makeCompletedRecord(
         kind: ScanRecord.Kind,
         now: Date,
-        fileCount: Int? = nil
+        fileCount: Int? = nil,
+        duration: TimeInterval? = nil
     ) -> ScanRecord {
         ScanRecord(
             id: UUID(),
             kind: kind,
             status: .completedNoThreats,
             createdAt: now,
-            fileCount: fileCount ?? Int.random(in: fileCountRange)
+            fileCount: fileCount ?? Int.random(in: fileCountRange),
+            duration: duration
         )
     }
 
     static func makeCanceledRecord(
         kind: ScanRecord.Kind,
         now: Date,
-        fileCount: Int? = nil
+        fileCount: Int? = nil,
+        duration: TimeInterval? = nil
     ) -> ScanRecord {
         ScanRecord(
             id: UUID(),
             kind: kind,
             status: .canceledNoThreats,
             createdAt: now,
-            fileCount: fileCount ?? Int.random(in: fileCountRange)
+            fileCount: fileCount ?? Int.random(in: fileCountRange),
+            duration: duration
         )
     }
 

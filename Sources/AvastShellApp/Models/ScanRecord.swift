@@ -17,4 +17,6 @@ struct ScanRecord: Codable, Equatable, Identifiable, Sendable {
     let status: Status
     let createdAt: Date
     let fileCount: Int
+    /// 扫描耗时（秒）；旧数据无该字段时为 nil。
+    let duration: TimeInterval?
 }
