@@ -84,6 +84,14 @@ private struct RootShellView: View {
             }
         }
         .ignoresSafeArea()
+        .overlay {
+            if state.isShowingScanDetails, let record = state.displayedRecord {
+                ScanResultDetailsSheet(record: record) {
+                    state.isShowingScanDetails = false
+                }
+            }
+        }
+        .animation(.easeInOut(duration: 0.2), value: state.isShowingScanDetails)
         .preferredColorScheme(.dark)
     }
 }
@@ -116,8 +124,8 @@ private struct PageSwitcher: View {
         .clipped()
         .onChange(of: state.page) { _, newValue in
             guard newValue != current else { return }
-            if incoming != nil {
-                // 上一次过渡尚未结束又发生跳转：直接定位到最新页面
+            if incoming != nil || state.navigationDirection == .instant {
+                // tab 切换不播动画；或上一次过渡尚未结束又发生跳转：直接定位到最新页面
                 var transaction = Transaction()
                 transaction.disablesAnimations = true
                 withTransaction(transaction) {
@@ -152,6 +160,7 @@ private struct PageSwitcher: View {
             case .home: HomeView(state: state)
             case .scanCenter: ScanCenterView(state: state)
             case .deepScanProgress: DeepScanProgressView(state: state)
+            case .scanResult: ScanResultView(state: state)
             case .scanHistory: ScanHistoryView(state: state)
             }
         }

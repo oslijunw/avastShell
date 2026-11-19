@@ -3,7 +3,7 @@ import Testing
 @testable import AvastShellApp
 
 struct AppStateTests {
-    @Test
+    @Test @MainActor
     func homeActionNavigatesToScanCenter() throws {
         let state = try makeState(now: fixedNow)
 
@@ -13,7 +13,7 @@ struct AppStateTests {
         #expect(state.navigationDirection == .forward)
     }
 
-    @Test
+    @Test @MainActor
     func returningHomeFromScanCenterMarksNavigationAsBackward() throws {
         let state = try makeState(now: fixedNow)
 
@@ -24,7 +24,7 @@ struct AppStateTests {
         #expect(state.navigationDirection == .backward)
     }
 
-    @Test
+    @Test @MainActor
     func openingScanHistoryMarksNavigationAsForward() throws {
         let state = try makeState(now: fixedNow)
 
@@ -34,7 +34,7 @@ struct AppStateTests {
         #expect(state.navigationDirection == .forward)
     }
 
-    @Test
+    @Test @MainActor
     func startingDeepScanSwitchesToProgressPageAndResetsProgress() throws {
         let state = try makeState(now: fixedNow)
         state.scanProgress = 57
@@ -45,7 +45,7 @@ struct AppStateTests {
         #expect(state.scanProgress == 0)
     }
 
-    @Test
+    @Test @MainActor
     func cancelingActiveScanCreatesCanceledHistoryEntryAndReturnsToScanCenter() throws {
         let state = try makeState(now: fixedNow)
 
@@ -58,7 +58,7 @@ struct AppStateTests {
         #expect(state.historySnapshot.records.first?.kind == .deep)
     }
 
-    @Test
+    @Test @MainActor
     func completingActiveScanCreatesSuccessfulEntryAndSwitchesToHistory() throws {
         let state = try makeState(now: fixedNow)
 
@@ -71,7 +71,7 @@ struct AppStateTests {
         #expect(state.historySnapshot.records.first?.fileCount == 66_000_000)
     }
 
-    @Test
+    @Test @MainActor
     func smartScanKeepsItsTypeWhenCompleted() throws {
         let state = try makeState(now: fixedNow)
         state.startScan(kind: .smart)
@@ -81,7 +81,7 @@ struct AppStateTests {
         #expect(state.page == .scanHistory)
     }
 
-    @Test
+    @Test @MainActor
     func deepScanSurvivesRelaunchWithOriginalTimestamp() throws {
         let yesterday = fixedNow.addingTimeInterval(-86_400)
         let url = URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent(UUID().uuidString)
@@ -106,10 +106,119 @@ struct AppStateTests {
         #expect(state.lastUpdatedAt == fixedNow.addingTimeInterval(-1800))
     }
 
+    @Test @MainActor
+    func scanTabSwitchIsInstantWithoutSlideAnimation() throws {
+        let state = try makeState(now: fixedNow)
+
+        state.selectScanTab(.history)
+        #expect(state.page == .scanHistory)
+        #expect(state.navigationDirection == .instant)
+
+        state.selectScanTab(.scanNow)
+        #expect(state.page == .scanCenter)
+        #expect(state.scanCenterTab == .scanNow)
+        #expect(state.navigationDirection == .instant)
+    }
+
+    @Test @MainActor
+    func scanResultFlowOpensFromHistoryAndReturnsToHistoryTab() throws {
+        let state = try makeState(now: fixedNow)
+        state.startDeepScan()
+        try state.cancelActiveScan(now: fixedNow, fileCount: 423)
+        let record = try #require(state.historySnapshot.records.first)
+
+        state.showScanResult(record)
+        #expect(state.page == .scanResult)
+        #expect(state.displayedRecord == record)
+        #expect(state.navigationDirection == .forward)
+
+        state.isShowingScanDetails = true
+        state.closeScanResult()
+        #expect(state.page == .scanHistory)
+        #expect(state.navigationDirection == .backward)
+        #expect(state.isShowingScanDetails == false)
+        // 关闭结果页时保留记录，以保证退场动画正常渲染
+        #expect(state.displayedRecord == record)
+    }
+
+    @Test @MainActor
+    func scanDurationIsRandomWithinTwoToFourHours() throws {
+        let state = try makeState(now: fixedNow)
+        state.startScan(kind: .deep)
+        try state.cancelActiveScan(now: fixedNow, fileCount: 423)
+        let duration = try #require(state.historySnapshot.records.first?.duration)
+        #expect((7200.0...14400.0).contains(duration))
+    }
+
+    @Test @MainActor
+    func deepScanSimulationCompletesAndSwitchesToHistory() async throws {
+        let state = try makeState(now: fixedNow)
+        state.scanSimulationSteps = 2
+        state.scanSimulationStepInterval = .milliseconds(1)
+
+        state.startDeepScan()
+        try await waitUpTo(seconds: 3) { !state.isScanRunning }
+
+        #expect(!state.isScanRunning)
+        #expect(state.page == .scanHistory)
+        #expect(state.historySnapshot.records.first?.status == .completedNoThreats)
+        #expect(state.deepScanProgressFraction == nil)
+    }
+
+    @Test @MainActor
+    func returningToScanCenterKeepsScanRunningWithProgress() async throws {
+        let state = try makeState(now: fixedNow)
+        state.scanSimulationSteps = 4
+        state.scanSimulationStepInterval = .milliseconds(10)
+
+        state.startDeepScan()
+        state.showScanCenter() // 返回扫描中心，扫描继续
+        try await waitUpTo(seconds: 2) { state.scanProgress > 0 }
+
+        #expect(state.isScanRunning)
+        #expect(state.scanProgress > 0)
+        #expect(state.deepScanProgressFraction != nil)
+        let pausedProgress = state.scanProgress
+
+        state.deepScanTapped() // 重新进入进度页，不重置进度
+        #expect(state.page == .deepScanProgress)
+        #expect(state.scanProgress >= pausedProgress)
+
+        try state.cancelActiveScan(now: fixedNow) // 清理：取消扫描
+        #expect(!state.isScanRunning)
+        #expect(state.page == .scanCenter)
+        #expect(state.deepScanProgressFraction == nil)
+    }
+
+    @Test @MainActor
+    func completingScanInBackgroundDoesNotForceNavigation() async throws {
+        let state = try makeState(now: fixedNow)
+        state.scanSimulationSteps = 2
+        state.scanSimulationStepInterval = .milliseconds(1)
+
+        state.startDeepScan()
+        state.showScanCenter()
+        try await waitUpTo(seconds: 3) { !state.isScanRunning }
+
+        #expect(!state.isScanRunning)
+        #expect(state.page == .scanCenter) // 不强制跳转到历史页
+        #expect(state.historySnapshot.records.first?.status == .completedNoThreats)
+        #expect(state.deepScanProgressFraction == nil)
+    }
+
     private var fixedNow: Date {
         Date(timeIntervalSince1970: 1_781_621_000)
     }
 
+    @MainActor
+    private func waitUpTo(seconds: Double, until condition: () -> Bool) async throws {
+        let deadline = Date().addingTimeInterval(seconds)
+        while !condition() && Date() < deadline {
+            try await Task.sleep(for: .milliseconds(10))
+        }
+    }
+
+    @MainActor
     private func makeState(now: Date) throws -> AppState {
         try AppState(
             historyStore: HistoryStore(
