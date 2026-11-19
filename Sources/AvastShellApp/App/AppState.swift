@@ -20,7 +20,8 @@ final class AppState {
     var historySnapshot: ScanHistorySnapshot
 
     let launchedAt: Date
-    let lastUpdatedAt: Date
+    /// 上次检查更新的时间，点击「立即更新」后刷新。
+    private(set) var lastUpdatedAt: Date
     var isCheckingForUpdates = false
     var hasCheckedForUpdates = false
 
@@ -38,12 +39,13 @@ final class AppState {
     }
 
     init(historyStore: HistoryStore, launchedAt: Date = Date()) throws {
+        let initialLastUpdatedAt = launchedAt.addingTimeInterval(-30 * 60)
         self.launchedAt = launchedAt
-        self.lastUpdatedAt = launchedAt.addingTimeInterval(-30 * 60)
+        self.lastUpdatedAt = initialLastUpdatedAt
         self.historyStore = historyStore
         var snapshot = try historyStore.load()
         snapshot.settings.lastLaunchedAt = launchedAt
-        snapshot.settings.lastUpdatedAt = lastUpdatedAt
+        snapshot.settings.lastUpdatedAt = initialLastUpdatedAt
         self.historySnapshot = try historyStore.save(snapshot)
     }
 
@@ -56,6 +58,7 @@ final class AppState {
         do { try await Task.sleep(for: .milliseconds(650)) }
         catch { return }
         hasCheckedForUpdates = true
+        lastUpdatedAt = Date()
     }
 
     func showScanCenter(tab: ScanCenterTab = .scanNow) {

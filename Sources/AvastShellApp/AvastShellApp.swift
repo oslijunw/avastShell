@@ -39,6 +39,14 @@ struct AvastShellApp: App {
         .windowStyle(.hiddenTitleBar)
         .defaultSize(width: 1008, height: 672)
         .windowResizability(.contentSize)
+
+        // 「首选项」独立窗口（单实例，可拖动；隐藏标题栏，内容顶部自绘居中标题）
+        Window("首选项", id: "preferences") {
+            PreferencesWindowView(state: appState)
+        }
+        .windowStyle(.hiddenTitleBar)
+        .defaultSize(width: 800, height: 620)
+        .windowResizability(.contentSize)
     }
 
     private static func fallbackHistoryFileURL() -> URL {

@@ -97,13 +97,15 @@ struct AppStateTests {
     }
 
     @Test @MainActor
-    func updateCheckKeepsTheStartupMinusHalfAnHourTimestamp() async throws {
+    func updateCheckRefreshesLastUpdatedAt() async throws {
         let state = try makeState(now: fixedNow)
         #expect(state.lastUpdatedAt == fixedNow.addingTimeInterval(-1800))
+        let checkStart = Date()
         await state.checkForUpdates()
         #expect(state.hasCheckedForUpdates)
         #expect(!state.isCheckingForUpdates)
-        #expect(state.lastUpdatedAt == fixedNow.addingTimeInterval(-1800))
+        // 检查完成后刷新为本次检查时间
+        #expect(state.lastUpdatedAt >= checkStart)
     }
 
     @Test @MainActor
