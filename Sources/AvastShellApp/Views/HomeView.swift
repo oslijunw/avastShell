@@ -43,7 +43,7 @@ struct HomeView: View {
 
                 Grid(horizontalSpacing: 18, verticalSpacing: 12) {
                     GridRow {
-                        FeatureTile(icon: .search, title: "病毒扫描", isScanning: true) { state.showScanCenter() }
+                        FeatureTile(icon: .search, title: "病毒扫描") { state.showScanCenter() }
                         FeatureTile(icon: .scam, title: "反诈卫士", hasAIBadge: true) {}
                         FeatureTile(icon: .globe, title: "流量监测程序") {}
                         FeatureTile(icon: .network, title: "网络检测程序") {}
