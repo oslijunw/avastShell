@@ -4,6 +4,8 @@ import Observation
 @Observable
 final class AppState {
     var page: AppPage = .home
+    /// 最近一次页面切换的方向，用于驱动左右滑动过渡动画。
+    private(set) var navigationDirection: NavigationDirection = .forward
     var scanCenterTab: ScanCenterTab = .scanNow
     var scanTitle: String = "深度扫描"
     var scanProgress: Int = 0
@@ -40,15 +42,18 @@ final class AppState {
 
     func showScanCenter(tab: ScanCenterTab = .scanNow) {
         scanCenterTab = tab
+        navigationDirection = .forward
         page = .scanCenter
     }
 
     func showHome() {
+        navigationDirection = .backward
         page = .home
     }
 
     func showScanHistory() {
         historySnapshot = (try? historyStore.load()) ?? historySnapshot
+        navigationDirection = .forward
         page = .scanHistory
     }
 
@@ -60,6 +65,7 @@ final class AppState {
         activeScanKind = kind
         scanTitle = kind.rawValue
         scanProgress = 0
+        navigationDirection = .forward
         page = .deepScanProgress
     }
 
@@ -78,6 +84,7 @@ final class AppState {
 
         self.activeScanKind = nil
         scanProgress = 0
+        navigationDirection = .backward
         page = .scanCenter
     }
 
@@ -92,6 +99,7 @@ final class AppState {
 
         self.activeScanKind = nil
         scanProgress = 100
+        navigationDirection = .forward
         page = .scanHistory
     }
 

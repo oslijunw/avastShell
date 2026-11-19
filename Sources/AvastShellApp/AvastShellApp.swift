@@ -75,15 +75,8 @@ private struct RootShellView: View {
                 AvastTheme.backgroundGradient
                 VStack(spacing: 0) {
                     TopBarView(state: state)
-                    Group {
-                        switch state.page {
-                        case .home: HomeView(state: state)
-                        case .scanCenter: ScanCenterView(state: state)
-                        case .deepScanProgress: DeepScanProgressView(state: state)
-                        case .scanHistory: ScanHistoryView(state: state)
-                        }
-                    }
-                    .frame(height: 634)
+                    PageSwitcher(state: state)
+                        .frame(height: 634)
                 }
                 .frame(width: 1008, height: 672)
                 .scaleEffect(scale)
@@ -92,5 +85,77 @@ private struct RootShellView: View {
         }
         .ignoresSafeArea()
         .preferredColorScheme(.dark)
+    }
+}
+
+/// 页面切换容器。
+/// 前进：新页面从右缘滑入（从右到左），旧页面向左滑出，两页整体同步推移。
+/// 后退：新页面从左缘滑入（从左到右）并覆盖原地不动的旧页面。
+private struct PageSwitcher: View {
+    let state: AppState
+
+    @State private var current: AppPage = .home
+    @State private var incoming: AppPage?
+    @State private var isForward = true
+    @State private var slideOffset: CGFloat = 0
+
+    private static let pageWidth: CGFloat = 1008
+    private static let slideDuration: TimeInterval = 0.28
+
+    var body: some View {
+        ZStack {
+            pageView(current)
+                .offset(x: currentOffset)
+            if let incoming {
+                pageView(incoming)
+                    .zIndex(1)
+                    .offset(x: slideOffset)
+            }
+        }
+        .frame(width: Self.pageWidth, height: 634)
+        .clipped()
+        .onChange(of: state.page) { _, newValue in
+            guard newValue != current else { return }
+            if incoming != nil {
+                // 上一次过渡尚未结束又发生跳转：直接定位到最新页面
+                var transaction = Transaction()
+                transaction.disablesAnimations = true
+                withTransaction(transaction) {
+                    current = newValue
+                    incoming = nil
+                    slideOffset = 0
+                }
+                return
+            }
+            isForward = state.navigationDirection == .forward
+            incoming = newValue
+            slideOffset = isForward ? Self.pageWidth : -Self.pageWidth
+            withAnimation(.easeInOut(duration: Self.slideDuration)) {
+                slideOffset = 0
+            } completion: {
+                current = newValue
+                incoming = nil
+            }
+        }
+    }
+
+    private var currentOffset: CGFloat {
+        guard incoming != nil else { return 0 }
+        // 前进：旧页随新页同步向左滑出；后退：旧页随新页同步向右滑出。
+        return isForward ? slideOffset - Self.pageWidth : slideOffset + Self.pageWidth
+    }
+
+    @ViewBuilder
+    private func pageView(_ page: AppPage) -> some View {
+        Group {
+            switch page {
+            case .home: HomeView(state: state)
+            case .scanCenter: ScanCenterView(state: state)
+            case .deepScanProgress: DeepScanProgressView(state: state)
+            case .scanHistory: ScanHistoryView(state: state)
+            }
+        }
+        .frame(width: Self.pageWidth)
+        .background(AvastTheme.backgroundGradient)
     }
 }

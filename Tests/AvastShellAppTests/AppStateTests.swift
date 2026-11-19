@@ -10,6 +10,28 @@ struct AppStateTests {
         state.showScanCenter()
 
         #expect(state.page == .scanCenter)
+        #expect(state.navigationDirection == .forward)
+    }
+
+    @Test
+    func returningHomeFromScanCenterMarksNavigationAsBackward() throws {
+        let state = try makeState(now: fixedNow)
+
+        state.showScanCenter()
+        state.showHome()
+
+        #expect(state.page == .home)
+        #expect(state.navigationDirection == .backward)
+    }
+
+    @Test
+    func openingScanHistoryMarksNavigationAsForward() throws {
+        let state = try makeState(now: fixedNow)
+
+        state.showScanHistory()
+
+        #expect(state.page == .scanHistory)
+        #expect(state.navigationDirection == .forward)
     }
 
     @Test
@@ -31,6 +53,7 @@ struct AppStateTests {
         try state.cancelActiveScan(now: fixedNow, fileCount: 33_000_000)
 
         #expect(state.page == .scanCenter)
+        #expect(state.navigationDirection == .backward)
         #expect(state.historySnapshot.records.first?.status == .canceledNoThreats)
         #expect(state.historySnapshot.records.first?.kind == .deep)
     }

@@ -2,7 +2,6 @@ import SwiftUI
 
 struct HomeView: View {
     let state: AppState
-    private let columns = Array(repeating: GridItem(.flexible(), spacing: 18), count: 4)
 
     var body: some View {
         ZStack(alignment: .bottom) {
@@ -42,15 +41,19 @@ struct HomeView: View {
                     .buttonStyle(AvastPrimaryButtonStyle())
                     .padding(.top, 27)
 
-                LazyVGrid(columns: columns, spacing: 12) {
-                    FeatureTile(icon: .search, title: "病毒扫描", isScanning: true) { state.showScanCenter() }
-                    FeatureTile(icon: .scam, title: "反诈卫士", hasAIBadge: true) {}
-                    FeatureTile(icon: .globe, title: "流量监测程序") {}
-                    FeatureTile(icon: .network, title: "网络检测程序") {}
-                    FeatureTile(icon: .mail, title: "电子邮件保护") {}
-                    FeatureTile(icon: .ransomware, title: "勒索软件防护", showLock: true) {}
-                    FeatureTile(icon: .shield, title: "核心防护") {}
-                    FeatureTile(icon: .quarantine, title: "隔离") {}
+                Grid(horizontalSpacing: 18, verticalSpacing: 12) {
+                    GridRow {
+                        FeatureTile(icon: .search, title: "病毒扫描", isScanning: true) { state.showScanCenter() }
+                        FeatureTile(icon: .scam, title: "反诈卫士", hasAIBadge: true) {}
+                        FeatureTile(icon: .globe, title: "流量监测程序") {}
+                        FeatureTile(icon: .network, title: "网络检测程序") {}
+                    }
+                    GridRow {
+                        FeatureTile(icon: .mail, title: "电子邮件保护") {}
+                        FeatureTile(icon: .ransomware, title: "勒索软件防护", showLock: true) {}
+                        FeatureTile(icon: .shield, title: "核心防护") {}
+                        FeatureTile(icon: .quarantine, title: "隔离") {}
+                    }
                 }
                 .padding(.horizontal, AvastTheme.pageInset)
                 .padding(.top, 24)
