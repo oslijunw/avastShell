@@ -6,7 +6,7 @@
 
 ## 下载运行
 
-在 [Releases](https://github.com/oslijunw/avastShell/releases/latest) 下载 `AvastShell-1.2.0-macOS-universal.zip`，解压后将 `AvastShell.app` 拖入“应用程序”并打开。
+在 [Releases](https://github.com/oslijunw/avastShell/releases/latest) 下载 `AvastShell-1.3.0-macOS-universal.zip`，解压后将 `AvastShell.app` 拖入“应用程序”并打开。
 
 - 系统要求：macOS 15 或更新版本。
 - 支持 Apple Silicon 和 Intel Mac。
@@ -45,7 +45,7 @@ swift test
 构建同时支持两种架构的发布包：
 
 ```sh
-./scripts/release.sh 1.2.0
+./scripts/release.sh 1.3.0
 ```
 
 生成文件位于 `dist/`。构建脚本不会上传、发布或附带本地扫描数据。

@@ -1,7 +1,7 @@
 #!/bin/bash
 set -euo pipefail
 
-version="${1:-1.2.0}"
+version="${1:-1.3.0}"
 project_root="$(cd "$(dirname "$0")/.." && pwd)"
 build_root="${AVAST_BUILD_ROOT:-$project_root/.build/distribution}"
 output_root="${AVAST_OUTPUT_ROOT:-$project_root/dist}"
